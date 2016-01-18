@@ -68,6 +68,6 @@ class CommerceML extends Node {
 	}
 	
 	public function __construct($xml) {
-		$this->obtainFromXmlReader($xml, self::XML_NAME_RU);
+		$this->obtainFromXmlReader($xml, self::XML_NAME_RU, true);
 	}
 }

@@ -99,38 +99,72 @@ abstract class Node {
 	}
 	
 	/**
-	 * 
+	 *
 	 * @param \XMLReader $xml
 	 */
-	protected function obtainFromXmlReader($xml, $const) {
-		$i = 0;
-		while ($xml->read()) {
-			$i++;
+	protected function obtainFromXmlReader($xml, $const, $imRoot = false) {
+	
+		do {
 			$nodeName = $xml->name;
-			if ($nodeName == $const) {
-				if ($xml->nodeType == \XMLReader::ELEMENT) {
-					$attrs = [];
-					if ($xml->hasAttributes)
-						while ($xml->moveToNextAttribute())
-							$attrs[$xml->name] = $xml->value;
-					$xml->moveToElement();
-					$this->checkRequiredAttributes($attrs);
-
-					if (!$xml->isEmptyElement)
-						foreach ($this->availableFields as $name => $item) {
-							if ($item['type'] == 'class' && !empty($item['class'])) {
-								$cls = $item['class'];
-								$obj = new $cls($xml);
-								$setter = $item['method'];
-								$this->$setter($obj);
-							}
-						}
-				} elseif ($xml->nodeType == \XMLReader::END_ELEMENT) {
-					break;
+			if ($nodeName != $const)
+				continue;
+	
+			if ($xml->nodeType == \XMLReader::END_ELEMENT)
+				break;
+					
+			if ($xml->nodeType == \XMLReader::ELEMENT) {
+				$this->processAttributes($xml);
+				$this->processFields($xml);
+			}
+		} while ($xml->next());
+		echo "\n".$this."\n";
+	}
+	
+	protected function processAttributes($xml) {
+		$attrs = [];
+		if ($xml->hasAttributes)
+			while ($xml->moveToNextAttribute())
+				$attrs[$xml->name] = $xml->value;
+	
+			$xml->moveToElement();
+			$this->checkRequiredAttributes($attrs);
+	}
+	protected function processFields($xml) {
+		$xml->read();
+		
+		do {
+			$nodeName = $xml->name;
+			
+			if ($xml->nodeType == \XMLReader::END_ELEMENT)
+				break;
+			
+			$isAvailable = in_array($nodeName, array_keys($this->availableFields));
+	
+			if ($xml->nodeType == \XMLReader::ELEMENT && $isAvailable) {
+				switch ($this->availableFields[$nodeName]['type']) {
+					case 'class': $this->processFieldClass($xml); break;
+					case 'string': $this->processFieldString($xml); break;
 				}
 			}
+			
+		} while ($xml->next());
+	}
+	
+	protected function processFieldString($xml) {
+		$nodeName = $xml->name;
+		$method = $this->availableFields[$nodeName]['method'];
+		$val = $xml->readString();
+		$this->$method($val);
+	}
+	protected function processFieldClass($xml) {
+		$nodeName = $xml->name;
+	
+		if (!$xml->isEmptyElement && !empty($this->availableFields[$nodeName]['class'])) {
+			$cls = $this->availableFields[$nodeName]['class'];
+			$obj = new $cls($xml);
+			$setter = $this->availableFields[$nodeName]['method'];
+			$this->$setter($obj);
 		}
-		echo "\n".$this."\n";
 	}
 	
 }

@@ -10,10 +10,7 @@ define('MIME_XML', 'application/xml');
 // реализовывает возможности подгрузки классов
 include_once 'autoloader.php';
 
-// Test
-
 use org\pandacorp\commerceml\models\CommerceML;
-
 
 function pd($d = "") {
 	print_r($d); die;

@@ -94,72 +94,49 @@ class Classifier extends Node {
 	
 	public function __toString() {
 		return 'Тег: ' . self::XML_NAME_RU . 
-			";\n\tИд: " . $this->getId() . 
-			";\n\tНаименование: " . $this->getName();
+			"; Ид: " . $this->getId() . 
+			"; Наименование: " . $this->getName();
 	}
 	
-	protected function obtainFromXmlReader($xml, $const) {
-		$i = 0;
-		$nodeName = $xml->name;
-		while ($xml->read()) {
-			$i++;
-			$nodeName = $xml->name;
-			if ($nodeName == $const) {
-				if ($xml->nodeType == \XMLReader::ELEMENT) {
+// 	protected function obtainFromXmlReader($xml, $const) {
+// 		while ($xml->read()) {
+// 			$nodeName = $xml->name;
+// 			if ($nodeName == $const) {
+// 				if ($xml->nodeType == \XMLReader::ELEMENT) {
 					
-// 					$attrs = [];
-// 					if ($xml->hasAttributes)
-// 						while ($xml->moveToNextAttribute())
-// 							$attrs[$xml->name] = $xml->value;
-// 					$this->checkRequiredFields($fields);
-	
-					if (!$xml->isEmptyElement) {
-						list($tag, $content) = $this->readFields($xml);
-						if (!empty($this->availableFields[$tag]) && $this->availableFields[$tag]['type'] == 'string') {
-							$method = $this->availableFields[$tag]['method'];
-							$this->$method($content);
-						}
-						
-					}
-// 						foreach ($this->availableFields as $name => $item) {
-// 							if ($item['type'] == 'string') {
-// 								$cls = $item['class'];
-// 								$obj = new $cls($xml);
-// 								$setter = $item['method'];
-// 								$this->$setter($obj);
-// 							} elseif ($item['type'] == 'class' && !empty($item['class'])) {
-// 								$cls = $item['class'];
-// 								$obj = new $cls($xml);
-// 								$setter = $item['method'];
-// 								$this->$setter($obj);
-// 							}
-// 						}
-						
-				} elseif ($xml->nodeType == \XMLReader::END_ELEMENT) {
-					break;
-				}
-			}
-		}
+// 					if (!$xml->isEmptyElement) {
+// 						$this->readFields($xml);
+// 						break;
+// 					}
+// 				} elseif ($xml->nodeType == \XMLReader::END_ELEMENT) {
+// 					break;
+// 				}
+// 			}
+// 		}
 		
-		echo "\n".$this."\n";
-	}
-	private function readFields($xml) {
-		$i = 0;
-		while ($xml->read()) {
-			$i++;
-			$nodeName = $xml->name;
-			if ($xml->nodeType == \XMLReader::ELEMENT) {
-				if (!$xml->isEmptyElement) {
-					if ($this->availableFields[$nodeName]['type'] == 'string') {
-						return [$nodeName, $xml->expand()->nodeValue];
-					}
-				}
-			} elseif ($xml->nodeType == \XMLReader::END_ELEMENT) {
-				break;
-			}
-		}
-		return [$nodeName, $xml->expand()->nodeValue];
-	}
+// 		echo "\n".$this."\n";
+// 	}
+// 	private function readFields($xml) {
+// 		$i = 0;
+// 		while ($xml->read()) {
+// 			$i++;
+// 			$nodeName = $xml->name;
+// 			if ($xml->nodeType == \XMLReader::ELEMENT) {
+// 				if (!$xml->isEmptyElement) {
+// 					if ($this->availableFields[$nodeName]['type'] == 'string') {
+// 						$method = $this->availableFields[$nodeName]['method'];
+// 						$val = $xml->expand()->nodeValue;
+// 						$this->$method($val);
+// 						$xml->next();
+// 					} else {
+// 						$xml->next();
+// 					}
+// 				}
+// 			} elseif ($xml->nodeType == \XMLReader::END_ELEMENT) {
+// 				break;
+// 			}
+// 		}
+// 	}
 	
 	public function __construct($xml) {
 		$this->obtainFromXmlReader($xml, self::XML_NAME_RU);
