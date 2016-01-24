@@ -67,7 +67,7 @@ class CommerceML extends Node {
 			'; ДатаФормирования: ' . $this->getCreationDate();
 	}
 	
-	public function __construct($xml) {
+	protected function init($xml) {
 		$this->obtainFromXmlReader($xml, self::XML_NAME_RU, true);
 	}
 }

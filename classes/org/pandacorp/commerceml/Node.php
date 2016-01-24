@@ -18,6 +18,25 @@ namespace org\pandacorp\commerceml;
  */
 abstract class Node {
 	
+	abstract protected function init($xml);
+	
+	protected $id;
+	public function hasId() {
+		return !empty($this->availableField('Ид')) && !empty($this->id);
+	}
+	
+	public function setId($id) {
+		$this->id = $id;
+	}
+	public function getId() {
+		return $this->id;
+	}
+	
+	/**
+	 * 
+	 * @var ObjectsRegister $register
+	 */
+	protected $register;
 	protected $children;
 	protected $attributes;
 	protected $fields;
@@ -102,22 +121,33 @@ abstract class Node {
 	 *
 	 * @param \XMLReader $xml
 	 */
-	protected function obtainFromXmlReader($xml, $const, $imRoot = false) {
-	
+	protected function obtainFromXmlReader($xml, $const) {
 		do {
 			$nodeName = $xml->name;
-			if ($nodeName != $const)
+			$nodeType = $xml->nodeType;
+			
+			if (!$this->checkParentEnd($nodeName, $const))
 				continue;
-	
-			if ($xml->nodeType == \XMLReader::END_ELEMENT)
-				break;
 					
-			if ($xml->nodeType == \XMLReader::ELEMENT) {
+			if ($this->checkXmlTypeElement($nodeType)) {
 				$this->processAttributes($xml);
-				$this->processFields($xml);
+				$this->processFields($xml, $const, $nodeName);
 			}
+			break;
 		} while ($xml->next());
+		
 		echo "\n".$this."\n";
+	}
+	
+	protected function checkParentEnd($parentName, $const, $nodeName = null) {
+		$s = $parentName == $const;
+		if (!$s && !empty($nodeName))
+			foreach ($this->availableFields as $key => $array) {
+				if (!empty($array['alias']) && $array['alias'] == $const)
+					$s = $nodeName == $key;
+			}
+		
+		return $s;
 	}
 	
 	protected function processAttributes($xml) {
@@ -129,42 +159,102 @@ abstract class Node {
 			$xml->moveToElement();
 			$this->checkRequiredAttributes($attrs);
 	}
-	protected function processFields($xml) {
-		$xml->read();
+	
+	private function splitTypeArray($type) {
+		$isArray = strpos($type, '[]');
+		$s = strstr($type, '[]', true);
+		$s = $s === false?$type:$s;
 		
+		return [$s, $isArray];
+	}
+	
+	protected function checkXmlTypeElement($nodeType) {
+		return $nodeType == \XMLReader::ELEMENT;
+	}
+	protected function checkXmlTypeEnd($nodeType) {
+		return $nodeType == \XMLReader::END_ELEMENT;
+	}
+	
+	protected function processFields($xml, $const, $parentName = null) {
+		$xml->read();
 		do {
 			$nodeName = $xml->name;
+			$nodeType = $xml->nodeType;
 			
-			if ($xml->nodeType == \XMLReader::END_ELEMENT)
+			if ($this->checkXmlTypeEnd($nodeType) && $this->checkParentEnd($parentName, $const, $nodeName))
 				break;
 			
-			$isAvailable = in_array($nodeName, array_keys($this->availableFields));
-	
-			if ($xml->nodeType == \XMLReader::ELEMENT && $isAvailable) {
-				switch ($this->availableFields[$nodeName]['type']) {
-					case 'class': $this->processFieldClass($xml); break;
-					case 'string': $this->processFieldString($xml); break;
+			if ($this->checkXmlTypeElement($nodeType) && $this->hasFieldName($nodeName)) {
+				list($type, $isArray) = $this->splitTypeArray($this->availableField($nodeName)['type']);
+				
+				switch ($type) {
+					case 'class': $this->processFieldClass($xml, $isArray); break;
+					case 'string': $this->processFieldString($xml, $isArray); break;
 				}
 			}
 			
 		} while ($xml->next());
 	}
 	
-	protected function processFieldString($xml) {
+	protected function processFieldString($xml, $isArray = false) {
 		$nodeName = $xml->name;
-		$method = $this->availableFields[$nodeName]['method'];
+		$method = $this->availableField($nodeName)['method'];
 		$val = $xml->readString();
 		$this->$method($val);
 	}
-	protected function processFieldClass($xml) {
+	protected function processFieldClass($xml, $isArray = false) {
 		$nodeName = $xml->name;
-	
-		if (!$xml->isEmptyElement && !empty($this->availableFields[$nodeName]['class'])) {
-			$cls = $this->availableFields[$nodeName]['class'];
-			$obj = new $cls($xml);
-			$setter = $this->availableFields[$nodeName]['method'];
-			$this->$setter($obj);
+		
+		if (!$xml->isEmptyElement && $this->hasFieldClass($nodeName)) {
+			if ($isArray) {
+				$xml->read();
+				
+				do {
+					if ($this->checkXmlTypeEnd($xml->nodeType))
+						break;
+					
+					$this->processFieldClass($xml);
+				} while ($xml->next());
+			} else {
+				$cls = $this->availableField($nodeName)['class'];
+				$obj = new $cls($this->register, $xml);
+				$setter = $this->availableField($nodeName)['method'];
+				$this->$setter($obj);
+			}
 		}
 	}
 	
+	public function setObjectsRegister($reg) {
+		$this->register = $reg;
+	}
+	public function getObjectsRegister() {
+		return $this->register;
+	}
+	
+	public function __construct($reg, $xml) {
+		$this->setObjectsRegister($reg);
+		
+		$this->init($xml);
+		
+		if ($this->hasId())
+			$this->register->objects[$this->id] = $this;
+		else 
+			$this->register->objects[] = $this;
+	}
+	
+	public function availableField($name, $withAlias = true) {
+		if (!empty($this->availableFields[$name]))
+			return $this->availableFields[$name];
+		else if ($withAlias) 
+			foreach ($this->availableFields as $key => $val)
+				if (!empty($val['alias']) && $val['alias'] == $name)
+					return $val;
+		return null;
+	}
+	public function hasFieldName($name, $withAlias = true) {
+		return !empty($this->availableField($name, $withAlias));
+	}
+	public function hasFieldClass($name) {
+		return !empty($this->availableField($name)['class']);
+	}
 }

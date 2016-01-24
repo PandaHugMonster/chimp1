@@ -10,10 +10,10 @@ namespace org\pandacorp\commerceml\models;
 
 use org\pandacorp\commerceml\Node;
 
-class Classifier extends Node {
+class Group extends Node {
 	
-	const XML_NAME_RU = 'Классификатор';
-	const XML_NAME_EN = 'Classifier';
+	const XML_NAME_RU = 'Группа';
+	const XML_NAME_EN = 'Group';
 	
 	protected $availableFields = [
 		'Ид' => [
@@ -28,13 +28,6 @@ class Classifier extends Node {
 			'method' => 'setName', 
 			'required' => true
 		],
-		'Владелец' => [
-			'type' => 'class',
-			'class' => '\org\pandacorp\commerceml\models\Owner',
-			'name' => 'owner', 
-			'method' => 'setOwner', 
-			'required' => true
-		],
 		'Группы' => [
 			'alias' => 'Группа',
 			'type' => 'class[]',
@@ -43,26 +36,15 @@ class Classifier extends Node {
 			'method' => 'addGroup',
 			'required' => false
 		],
-		'Свойства' => [
-			'alias' => 'Свойство',
-			'type' => 'class[]',
-			'class' => '\org\pandacorp\commerceml\models\Property',
-			'name' => 'properties', 
-			'method' => 'addProperty', 
-			'required' => false
-		]
 	];
 	
 	protected $name;
-	protected $owner;
-	protected $groups = [];
-	protected $properties = [];
 	
-	public function addProperty($property) {
-		$this->properties[] = $property;
+	public function setName($name) {
+		$this->name = $name;
 	}
-	public function getProperties() {
-		return $this->properties;
+	public function getName() {
+		return $this->name;
 	}
 	
 	public function addGroup($group) {
@@ -70,20 +52,6 @@ class Classifier extends Node {
 	}
 	public function getGroups() {
 		return $this->groups;
-	}
-	
-	public function setOwner($owner) {
-		$this->owner = $owner;
-	}
-	public function getOwner() {
-		return $this->owner;
-	}
-	
-	public function setName($name) {
-		$this->name = $name;
-	}
-	public function getName() {
-		return $this->name;
 	}
 	
 	public function __toString() {

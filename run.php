@@ -11,6 +11,7 @@ define('MIME_XML', 'application/xml');
 include_once 'autoloader.php';
 
 use org\pandacorp\commerceml\models\CommerceML;
+use org\pandacorp\commerceml\ObjectsRegister;
 
 function pd($d = "") {
 	print_r($d); die;
@@ -39,7 +40,7 @@ function maximumMemoryUsage() {
 }
 function finalizeLog($data, $correctness, $usage) {
 	logging('Массив: ');
-	logging($data);
+	var_dump($data);
 	logging('Максимально памяти выделено: ' . $usage);
 	logging('Документ верен: ' . $correctness);
 }
@@ -114,7 +115,7 @@ $filename = _HERE.'/webdata/import0_1.xml';
 // $filename = _HERE.'/webdata.zip';
 
 $data = null;
-
+$reg = null;
 //*
 
 if (mimeType($filename) == MIME_XML) {
@@ -125,7 +126,8 @@ if (mimeType($filename) == MIME_XML) {
 	$correctness = $xml->setSchema($xsdfilename);
 	
 	if ($correctness) {
-		$cml = new CommerceML($xml);
+		$reg = new ObjectsRegister();
+		$cml = new CommerceML($reg, $xml);
 	}
 	
 	$xml->close();
@@ -139,4 +141,4 @@ $xml = simplexml_load_file($filename);
 logging($xml->asXML());
 //*/
 
-finalizeLog($tree = null, $correctness, maximumMemoryUsage());
+finalizeLog($reg = '', $correctness, maximumMemoryUsage());
